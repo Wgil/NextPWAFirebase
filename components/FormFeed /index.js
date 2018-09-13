@@ -9,6 +9,7 @@ import Spinner from '../Spinner';
 import reverseGeocoding from '../../utils/reverseGeocoding';
 import axios from 'axios';
 import FileInput from '../FileInput';
+import b64ToBlob from '../../utils/b64ToBlob';
 
 export class FormFeed extends Component {
   constructor(props) {
@@ -63,7 +64,9 @@ export class FormFeed extends Component {
   }
 
   capture = () => {
-    const imageSrc = this.camera.current.getScreenshot();
+    const image = this.camera.current.getScreenshot();
+    const blob = b64ToBlob(image);
+    this.setState({ file: URL.createObjectURL(blob) });
   };
 
   handleDetectLocation = () => {
@@ -154,6 +157,7 @@ export class FormFeed extends Component {
       handleFallbackCameraFail,
       handleOnChangeFile,
       handleOnSubmit,
+      capture,
       state: {
         controls,
         file,
@@ -185,7 +189,10 @@ export class FormFeed extends Component {
             </TitleDescription>
             {
               showFileInput || (
-                <Button type='button' onClick={handleTryShowCamera}>
+                <Button
+                  type='button'
+                  onClick={!tryShowCamera ? handleTryShowCamera : capture}
+                >
                   Capture
                 </Button>
               )
@@ -193,15 +200,24 @@ export class FormFeed extends Component {
             {
               tryShowCamera && (
                 <InputField>
-                  <Webcam
-                    audio={false}
-                    height={350}
-                    width={'100%'}
-                    ref={this.camera}
-                    screenshotFormat="image/jpeg"
-                    videoConstraints={this.videoConstraints}
-                    onUserMediaError={handleFallbackCameraFail}
-                  />
+                  {
+                    file ?
+                    <img
+                      src={file}
+                      height={350}
+                      width={640}
+                    />
+                    :
+                    <Webcam
+                      audio={false}
+                      height={350}
+                      width={640}
+                      ref={this.camera}
+                      screenshotFormat="image/jpeg"
+                      videoConstraints={this.videoConstraints}
+                      onUserMediaError={handleFallbackCameraFail}
+                    />
+                  }
                 </InputField>
               )
             }
