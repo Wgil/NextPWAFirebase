@@ -66,7 +66,10 @@ export class FormFeed extends Component {
   capture = () => {
     const image = this.camera.current.getScreenshot();
     const blob = b64ToBlob(image);
-    this.setState({ file: URL.createObjectURL(blob) });
+    this.setState({
+      file: URL.createObjectURL(blob),
+      tryShowCamera: false
+    });
   };
 
   handleDetectLocation = () => {
@@ -96,7 +99,7 @@ export class FormFeed extends Component {
   }
 
   handleTryShowCamera = () => {
-    this.setState({ tryShowCamera: true })
+    this.setState({ tryShowCamera: true, file: null })
   }
 
   handleFallbackCameraFail = () => {
@@ -191,9 +194,13 @@ export class FormFeed extends Component {
               showFileInput || (
                 <Button
                   type='button'
-                  onClick={!tryShowCamera ? handleTryShowCamera : capture}
+                  onClick={
+                    !tryShowCamera || file !== null ? 
+                    handleTryShowCamera :
+                    capture
+                }
                 >
-                  Capture
+                  {file ? 'Retake' : 'Capture' }
                 </Button>
               )
             }
@@ -201,13 +208,6 @@ export class FormFeed extends Component {
               tryShowCamera && (
                 <InputField>
                   {
-                    file ?
-                    <img
-                      src={file}
-                      height={350}
-                      width={640}
-                    />
-                    :
                     <Webcam
                       audio={false}
                       height={350}
@@ -218,6 +218,16 @@ export class FormFeed extends Component {
                       onUserMediaError={handleFallbackCameraFail}
                     />
                   }
+                </InputField>
+              )
+            }
+            {
+              file !== null && (
+                <InputField>
+                  <img
+                  src={file}
+                  height={350}
+                  width={640} />
                 </InputField>
               )
             }
