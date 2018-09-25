@@ -9,7 +9,7 @@ import Spinner from '../Spinner';
 import reverseGeocoding from '../../utils/reverseGeocoding';
 import axios from 'axios';
 import FileInput from '../FileInput';
-import b64ToBlob from '../../utils/b64ToBlob';
+import dataURItoBlob from '../../utils/dataURItoBlob';
 
 export class FormFeed extends Component {
   constructor(props) {
@@ -65,11 +65,7 @@ export class FormFeed extends Component {
 
   capture = () => {
     const image = this.camera.current.getScreenshot();
-    const blob = b64ToBlob(image);
-    this.setState({
-      file: URL.createObjectURL(blob),
-      tryShowCamera: false
-    });
+    this.setState({ file: image });
   };
 
   handleDetectLocation = () => {
@@ -99,7 +95,7 @@ export class FormFeed extends Component {
   }
 
   handleTryShowCamera = () => {
-    this.setState({ tryShowCamera: true, file: null })
+    this.setState({ tryShowCamera: true })
   }
 
   handleFallbackCameraFail = () => {
@@ -119,10 +115,15 @@ export class FormFeed extends Component {
 
   handleOnSubmit = event => {
     event.preventDefault();
+    console.log(this.camera);
     this.setState({
       loadingRequest: true
     }, () => {
       const id = new Date().toISOString();
+      const file =
+        typeof this.state.file === "string" ?
+        dataURItoBlob(this.state.file) : 
+        this.state.file;
       const FormDataFeed = new FormData();
 
       FormDataFeed.append('id', id);
@@ -130,7 +131,7 @@ export class FormFeed extends Component {
       FormDataFeed.append('location', this.state.controls.location.value);
       FormDataFeed.append('rawLocationLat', this.state.lat);
       FormDataFeed.append('rawLocationLng', this.state.lng);
-      FormDataFeed.append('file', this.state.file, id + '.png');
+      FormDataFeed.append('file', file);
       axios.post('https://us-central1-pwagram-7decd.cloudfunctions.net/storePostData', FormDataFeed, {
         config: {
           headers: {
@@ -194,13 +195,9 @@ export class FormFeed extends Component {
               showFileInput || (
                 <Button
                   type='button'
-                  onClick={
-                    !tryShowCamera || file !== null ? 
-                    handleTryShowCamera :
-                    capture
-                }
+                  onClick={!tryShowCamera ? handleTryShowCamera : capture}
                 >
-                  {file ? 'Retake' : 'Capture' }
+                  Capture
                 </Button>
               )
             }
@@ -208,6 +205,13 @@ export class FormFeed extends Component {
               tryShowCamera && (
                 <InputField>
                   {
+                    file ?
+                    <img
+                      src={file}
+                      height={350}
+                      width={640}
+                    />
+                    :
                     <Webcam
                       audio={false}
                       height={350}
@@ -218,16 +222,6 @@ export class FormFeed extends Component {
                       onUserMediaError={handleFallbackCameraFail}
                     />
                   }
-                </InputField>
-              )
-            }
-            {
-              file !== null && (
-                <InputField>
-                  <img
-                  src={file}
-                  height={350}
-                  width={640} />
                 </InputField>
               )
             }
